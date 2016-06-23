@@ -199,6 +199,7 @@ namespace EVAStruts
 			if (!node.HasValue("TargetPartID"))
 			{
 				severStrut();
+				loaded = true;
 				return;
 			}
 
@@ -408,8 +409,6 @@ namespace EVAStruts
 
 			compoundPart.attachState = CompoundPart.AttachState.Detached;
 			EVAAttachState = CompoundPart.AttachState.Detached;
-
-			//targetAnchor.gameObject.SetActive(false);
 		}
 
 		private string professionValid(string s)
