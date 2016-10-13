@@ -37,7 +37,7 @@ namespace EVAStruts
     public class ModuleEVAStrut : CModuleLinkedMesh
     {
 		[KSPField]
-		public string useProfession = "Engineer";
+		public string useSkill = "RepairSkill";
 		[KSPField]
 		public int minLevel = 0;
 		[KSPField]
@@ -63,7 +63,7 @@ namespace EVAStruts
 
 		public override void OnStart(PartModule.StartState state)
 		{
-			useProfession = professionValid(useProfession);
+			useSkill = professionValid(useSkill);
 			minLevel = (int)clampValue(minLevel, 0, 5);
 			maxDistance = clampValue(maxDistance, 10, 500);
 
@@ -94,7 +94,6 @@ namespace EVAStruts
 			{
 				if (compoundPart.attachState == CompoundPart.AttachState.Attaching)
 				{
-
 					compoundPart.attachState = CompoundPart.AttachState.Detached;
 					InputLockManager.ClearControlLocks();
 				}
@@ -237,7 +236,7 @@ namespace EVAStruts
 
 			try
 			{
-				compoundPart.target = vessel.Parts.FirstOrDefault(p => p.craftID == targetID);
+				compoundPart.target = vessel.Parts.FirstOrDefault(p => p.flightID == targetID);
 			}
 			catch (Exception e)
 			{
@@ -265,14 +264,14 @@ namespace EVAStruts
 				severStrut();
 		}
 
-		public override void OnTargetSet(Part target)
+		public override void OnTargetSet(Part p)
 		{
 			if (linkedStrutModule != null)
 			{
-				linkedStrutModule.OnTargetSet(target);
+				linkedStrutModule.OnTargetSet(p);
 			}
 
-			base.OnTargetSet(target);
+			base.OnTargetSet(p);
 		}
 
 		public override void OnTargetLost()
@@ -324,7 +323,7 @@ namespace EVAStruts
 
 			if (!checkProfession)
 			{
-				ScreenMessages.PostScreenMessage("The Kerbal must be an " + useProfession + " to attach the EVA strut.", 6f, ScreenMessageStyle.UPPER_CENTER);
+				ScreenMessages.PostScreenMessage("The Kerbal must have the " + useSkill + " to attach the EVA strut.", 6f, ScreenMessageStyle.UPPER_CENTER);
 				return;
 			}
 
@@ -376,7 +375,7 @@ namespace EVAStruts
 
 		private void attachStrut()
 		{
-			targetID = compoundPart.target.craftID;
+			targetID = compoundPart.target.flightID;
 
 			Events["dropEVAStrut"].active = false;
 			Events["pickupEVAStrut"].active = false;
@@ -415,16 +414,31 @@ namespace EVAStruts
 		{
 			switch (s)
 			{
-				case "Pilot":
-				case "Engineer":
-				case "Scientist":
+				case "AutopilotSkill":
+				case "ConverterSkill":
+				case "DrillSkill":
+				case "EnginePower":
+				case "ExternalExperimentSkill":
+				case "FuelUsage":
+				case "FullVesselControlSkill":
+				case "HeatProduction":
+				case "MaxThrottle":
+				case "PartScienceReturn":
+				case "RepairSkill":
+				case "ScienceResetSkill":
+				case "ScienceSkill":
+				case "SpecialExperimentSkill":
+				case "VesselScienceReturn":
 					return s;
 				case "pilot":
-					return "Pilot";
+				case "Pilot":
+					return "AutopilotSkill";
+				case "Engineer":
 				case "engineer":
-					return "Engineer";
+					return "RepairSkill";
+				case "Scientist":
 				case "scientist":
-					return "Scientist";
+					return "ScienceSkill";
 			}
 
 			return "";
@@ -497,13 +511,13 @@ namespace EVAStruts
 		{
 			get
 			{
-				if (string.IsNullOrEmpty(useProfession))
+				if (string.IsNullOrEmpty(useSkill))
 					return true;
 
-				if (EVA.GetVesselCrew().First().experienceTrait.TypeName != useProfession)
-					return false;
+				if (EVA.GetVesselCrew().First().experienceTrait.Effects.Any(e => e.GetType().Name == useSkill))
+					return true;
 
-				return true;
+				return false;
 			}
 		}
 
