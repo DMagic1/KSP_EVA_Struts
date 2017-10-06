@@ -28,6 +28,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using CompoundParts;
 using Experience;
 using UnityEngine;
@@ -47,6 +48,9 @@ namespace EVAStruts
 		private Transform EVATransform;
 		private Transform EVAJetpack;
 
+		private static MethodInfo _previewMethod;
+		private static bool reflected;
+
 		private CModuleStrut linkedStrutModule;
 
 		private CompoundPart.AttachState EVAAttachState;
@@ -63,6 +67,9 @@ namespace EVAStruts
 
 		public override void OnStart(PartModule.StartState state)
 		{
+			if (!reflected)
+				assignReflection();
+
 			useSkill = professionValid(useSkill);
 			minLevel = (int)clampValue(minLevel, 0, 5);
 			maxDistance = clampValue(maxDistance, 10, 500);
@@ -175,8 +182,8 @@ namespace EVAStruts
 			else
 				setKerbalAttach();
 
-			base.OnPreviewAttachment(compoundPart.direction, compoundPart.targetPosition, compoundPart.targetRotation);
-		}
+			OnPreviewAttachment(compoundPart.direction, compoundPart.targetPosition, compoundPart.targetRotation);
+		}		
 
 		public override void OnSave(ConfigNode node)
 		{
@@ -310,6 +317,17 @@ namespace EVAStruts
 		public override void OnPreviewAttachment(UnityEngine.Vector3 rDir, UnityEngine.Vector3 rPos, UnityEngine.Quaternion rRot)
 		{
 			base.OnPreviewAttachment(rDir, rPos, rRot);
+
+			try
+			{
+				_previewMethod.Invoke(
+					this,
+					new object[] { true, rDir, rPos, rRot });
+			}
+			catch (Exception e)
+			{
+				Debug.Log("Error in invoking EVA strut anchor preview method\n" + e);
+			}
 		}
 
 		[KSPEvent(guiActive = false, guiActiveUnfocused = true, externalToEVAOnly = true, active = true, unfocusedRange = 4)]
@@ -554,6 +572,20 @@ namespace EVAStruts
 
 				return true;
 			}
+		}
+
+		private void assignReflection()
+		{
+			try
+			{
+				_previewMethod = typeof(CModuleLinkedMesh).GetMethod("TrackAnchor", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(bool), typeof(Vector3), typeof(Vector3), typeof(Quaternion) }, null);
+			}
+			catch (Exception e)
+			{
+				Debug.Log("Error in assigning EVA strut anchor preview method\n" + e);
+			}
+
+			reflected = true;
 		}
     }
 }
